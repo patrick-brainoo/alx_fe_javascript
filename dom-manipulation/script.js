@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  // Load quotes from localStorage or default
   let quotes = JSON.parse(localStorage.getItem('quotes')) || [
     { text: "The best way to get started is to quit talking and begin doing.", category: "Motivation" },
     { text: "Life is what happens when you're busy making other plans.", category: "Life" },
@@ -15,9 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const importFileInput = document.getElementById('importFile');
   const syncNotification = document.getElementById('syncNotification');
 
-  const serverURL = "https://jsonplaceholder.typicode.com/posts"; // Mock server
+  const serverURL = "https://jsonplaceholder.typicode.com/posts";
 
-  // Save quotes to localStorage
+  // Save quotes to local storage
   function saveQuotes() {
     localStorage.setItem('quotes', JSON.stringify(quotes));
   }
@@ -62,11 +61,10 @@ document.addEventListener('DOMContentLoaded', () => {
     form.appendChild(addBtn);
 
     addQuoteContainer.appendChild(form);
-
     addBtn.addEventListener('click', addQuote);
   }
 
-  // Add new quote
+  // Add a new quote
   function addQuote() {
     const textInput = document.getElementById('newQuoteText');
     const categoryInput = document.getElementById('newQuoteCategory');
@@ -87,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showRandomQuote();
   }
 
-  // Populate category dropdown dynamically
+  // Populate categories
   function populateCategories() {
     const lastCategory = categoryFilter.value;
     categoryFilter.innerHTML = '<option value="all">All Categories</option>';
@@ -109,13 +107,13 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('lastSelectedCategory', categoryFilter.value);
   }
 
-  // Filter quotes based on dropdown
+  // Filter quotes
   function filterQuotes() {
     localStorage.setItem('lastSelectedCategory', categoryFilter.value);
     showRandomQuote();
   }
 
-  // Export quotes as JSON
+  // Export JSON
   function exportQuotesToJson() {
     const dataStr = JSON.stringify(quotes, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
@@ -127,11 +125,10 @@ document.addEventListener('DOMContentLoaded', () => {
     URL.revokeObjectURL(url);
   }
 
-  // Import quotes from JSON
+  // Import JSON
   function importFromJsonFile(event) {
     const file = event.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = function(e) {
       try {
@@ -148,11 +145,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // -------------------------------
-  // Server sync with conflict resolution
+  // Fetch new quotes from server
   // -------------------------------
   async function fetchQuotesFromServer() {
     try {
-      // 1. GET server quotes
       const response = await fetch(serverURL);
       if (!response.ok) throw new Error("Failed to fetch server data");
       const serverData = await response.json();
@@ -162,7 +158,6 @@ document.addEventListener('DOMContentLoaded', () => {
         category: "Server"
       }));
 
-      // 2. Merge server quotes, server takes precedence
       let conflictDetected = false;
       serverQuotes.forEach(sq => {
         const exists = quotes.some(q => q.text === sq.text && q.category === sq.category);
@@ -172,18 +167,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
 
-      // 3. POST local quotes to server
-      for (const localQuote of quotes) {
-        await fetch(serverURL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(localQuote)
-        });
-      }
-
-      // 4. Update local storage and notify
       if (conflictDetected) {
         saveQuotes();
         populateCategories();
@@ -194,14 +177,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     } catch (err) {
       console.error(err);
-      syncNotification.textContent = "Failed to sync with server.";
+      syncNotification.textContent = "Failed to fetch server updates.";
+      setTimeout(() => syncNotification.textContent = "", 4000);
+    }
+  }
+
+  // -------------------------------
+  // Sync local quotes to server
+  // -------------------------------
+  async function syncQuotes() {
+    try {
+      for (const localQuote of quotes) {
+        await fetch(serverURL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(localQuote)
+        });
+      }
+      syncNotification.textContent = "Local quotes synced to server!";
+      setTimeout(() => syncNotification.textContent = "", 4000);
+    } catch (err) {
+      console.error(err);
+      syncNotification.textContent = "Failed to sync local quotes.";
       setTimeout(() => syncNotification.textContent = "", 4000);
     }
   }
 
   // Periodic sync every 60 seconds
-  setInterval(fetchQuotesFromServer, 60000);
-  fetchQuotesFromServer(); // initial sync
+  setInterval(() => {
+    fetchQuotesFromServer();
+    syncQuotes();
+  }, 60000);
+
+  // Initial fetch and sync on page load
+  fetchQuotesFromServer();
+  syncQuotes();
 
   // -------------------------------
   // Initialization
