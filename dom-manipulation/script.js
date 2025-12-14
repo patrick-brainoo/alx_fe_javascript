@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  // Load quotes from local storage or use default
+  // Load quotes from localStorage or default
   let quotes = JSON.parse(localStorage.getItem('quotes')) || [
     { text: "The best way to get started is to quit talking and begin doing.", category: "Motivation" },
     { text: "Life is what happens when you're busy making other plans.", category: "Life" },
@@ -10,19 +10,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const quoteDisplay = document.getElementById('quoteDisplay');
   const newQuoteBtn = document.getElementById('newQuote');
   const addQuoteContainer = document.getElementById('addQuoteContainer');
+  const categoryFilter = document.getElementById('categoryFilter');
   const exportBtn = document.getElementById('exportBtn');
   const importFileInput = document.getElementById('importFile');
-  const categoryFilter = document.getElementById('categoryFilter');
   const syncNotification = document.getElementById('syncNotification');
 
-  const serverURL = "https://jsonplaceholder.typicode.com/posts"; // mock server
+  const serverURL = "https://jsonplaceholder.typicode.com/posts"; // Mock server
 
-  // Save quotes to local storage
+  // Save quotes to localStorage
   function saveQuotes() {
     localStorage.setItem('quotes', JSON.stringify(quotes));
   }
 
-  // Show a random quote (filtered by category)
+  // Show random quote (filtered)
   function showRandomQuote() {
     let filteredQuotes = quotes;
     const selectedCategory = categoryFilter.value;
@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sessionStorage.setItem('lastQuote', JSON.stringify(quote));
   }
 
-  // Dynamically create the add quote form
+  // Create add-quote form dynamically
   function createAddQuoteForm() {
     const form = document.createElement('div');
 
@@ -62,10 +62,11 @@ document.addEventListener('DOMContentLoaded', () => {
     form.appendChild(addBtn);
 
     addQuoteContainer.appendChild(form);
+
     addBtn.addEventListener('click', addQuote);
   }
 
-  // Add a new quote dynamically
+  // Add new quote
   function addQuote() {
     const textInput = document.getElementById('newQuoteText');
     const categoryInput = document.getElementById('newQuoteCategory');
@@ -108,12 +109,13 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('lastSelectedCategory', categoryFilter.value);
   }
 
+  // Filter quotes based on dropdown
   function filterQuotes() {
     localStorage.setItem('lastSelectedCategory', categoryFilter.value);
     showRandomQuote();
   }
 
-  // Export quotes to JSON
+  // Export quotes as JSON
   function exportQuotesToJson() {
     const dataStr = JSON.stringify(quotes, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
@@ -129,6 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function importFromJsonFile(event) {
     const file = event.target.files[0];
     if (!file) return;
+
     const reader = new FileReader();
     reader.onload = function(e) {
       try {
@@ -145,22 +148,21 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // -------------------------------
-  // Server Sync & Conflict Resolution
+  // Server sync with conflict resolution
   // -------------------------------
-  async function syncQuotes() {
+  async function fetchQuotesFromServer() {
     try {
-      // 1. Fetch server quotes
+      // 1. GET server quotes
       const response = await fetch(serverURL);
       if (!response.ok) throw new Error("Failed to fetch server data");
       const serverData = await response.json();
 
-      // Map server data to our format
       const serverQuotes = serverData.slice(0,5).map(item => ({
         text: item.title,
         category: "Server"
       }));
 
-      // 2. Merge server quotes (server takes precedence)
+      // 2. Merge server quotes, server takes precedence
       let conflictDetected = false;
       serverQuotes.forEach(sq => {
         const exists = quotes.some(q => q.text === sq.text && q.category === sq.category);
@@ -170,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
 
-      // 3. POST local new quotes to server
+      // 3. POST local quotes to server
       for (const localQuote of quotes) {
         await fetch(serverURL, {
           method: "POST",
@@ -181,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
 
-      // 4. Update local storage and UI
+      // 4. Update local storage and notify
       if (conflictDetected) {
         saveQuotes();
         populateCategories();
@@ -198,11 +200,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Periodic sync every 60 seconds
-  setInterval(syncQuotes, 60000);
-  syncQuotes(); // Initial sync on page load
+  setInterval(fetchQuotesFromServer, 60000);
+  fetchQuotesFromServer(); // initial sync
 
   // -------------------------------
-  // INITIALIZATION
+  // Initialization
   // -------------------------------
   populateCategories();
   showRandomQuote();
