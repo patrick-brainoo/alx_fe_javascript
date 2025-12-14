@@ -9,8 +9,14 @@
 
   <h1>Dynamic Quote Generator</h1>
 
+  <!-- Category filter dropdown -->
+  <label for="categoryFilter">Filter by Category: </label>
+  <select id="categoryFilter">
+    <option value="all">All Categories</option>
+  </select>
+
   <!-- Quote display area -->
-  <div id="quoteDisplay"></div>
+  <div id="quoteDisplay" style="margin:20px 0;"></div>
 
   <!-- Button to show a random quote -->
   <button id="newQuote">Show New Quote</button>
@@ -24,7 +30,7 @@
     <input type="file" id="importFile" accept=".json" />
   </div>
 
-  <!-- Link to your script.js -->
   <script src="script.js"></script>
 </body>
 </html>
+
