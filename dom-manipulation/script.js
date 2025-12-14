@@ -196,7 +196,8 @@ document.addEventListener('DOMContentLoaded', () => {
           body: JSON.stringify(localQuote)
         });
       }
-      syncNotification.textContent = "Local quotes synced to server!";
+      // Updated notification to match ALX requirement
+      syncNotification.textContent = "Quotes synced with server!";
       setTimeout(() => syncNotification.textContent = "", 4000);
     } catch (err) {
       console.error(err);
